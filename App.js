@@ -70,7 +70,7 @@ export default function App() {
       <Header />
       <CandidateList
         candidates={candidates}
-        maxCandidates={candidates.length}
+        maxCandidates={3}
         controlType={controlType}
       />
       <StatusBar style="auto" />
@@ -81,7 +81,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#EEE',
     alignItems: 'stretch',
     justifyContent: 'center',
     width: '100%',

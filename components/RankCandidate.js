@@ -21,7 +21,7 @@ export default function RankCandidate({
     lowest: index === rankedItemIndices.lowestRank,
     first: index === rankedItemIndices.first,
     last: index === rankedItemIndices.last,
-  }), [index, rankedItemIndices])
+  }), [candidate.rank, index, rankedItemIndices])
 
   const should = useMemo(() => ({
     disableTap: contractIsMet && isRanked.not,
@@ -33,14 +33,15 @@ export default function RankCandidate({
       || (isRanked.not),
   }), [contractIsMet, isRanked, moveType])
 
-  const animatedRank = useSharedValue(candidate.rank)
+  function handleArrowUp({ index, rank }) {
+    !should.hideArrowUp && actions[moveType === 'rank' ? 'raiseRank' : 'moveUp'](index, rank)
+  }
 
-  // const animatedRankStyles = [
-  //   styles.rank,
-  //   useAnimatedStyle(() => ({
-  //     opacity: animatedRank.value,
-  //   }))
-  // ]
+  function handleArrowDown({ index, rank }) {
+    !should.hideArrowDown && actions[moveType === 'rank' ? 'lowerRank' : 'moveDown'](index, rank)
+  }
+  
+  const animatedRank = useSharedValue(candidate.rank)
 
   useEffect(() => {
     animatedRank.value = withSpring(candidate.rank, SPRING_CONFIG.ELEMENT)
@@ -58,51 +59,59 @@ export default function RankCandidate({
     should.hideArrowDown
     ? [styles.control, styles.disabled]
       : styles.control
-
+  
   return (
     <View
       style={styles.wrapper}
     >
       <Pressable
-        style={candidateAndRankStyles}
+        style={[candidateAndRankStyles, !isRanked.not && styles.selected]}
         onPress={() => actions.select(index)}
       >
         <Animated.View
           layout={CurvedTransition}
-          style={[styles.rank, isRanked.not && styles.unranked]}
+          style={[
+            styles.rank,
+            isRanked.not && styles.unranked,
+            should.disableTap && styles.disabled,
+            isRanked.not && should.disableTap && styles.unrankedAndDisabled
+          ]}
         >
-          {!should.disableTap
-            ? (
-              <Animated.Text entering={FadeIn} exiting={FadeOut} style={[styles.rankLabel, isRanked.not && styles.unranked]}>
-                Rank
-              </Animated.Text>
-            ) : (
-              <Animated.Text entering={FadeIn} exiting={FadeOut} style={[styles.rankLabel, isRanked.not && styles.unranked]}>
-                —
-              </Animated.Text>
-          )}
-          <Animated.Text layout={CurvedTransition} entering={FadeIn} exiting={FadeOut} style={[styles.rankText, isRanked.not && styles.unranked]}>
-            {isRanked.not ? currentRank + 1 : candidate.rank + 1}
+          <Animated.Text
+            layout={CurvedTransition}
+            entering={FadeIn}
+            exiting={FadeOut}
+            style={[styles.rankText, isRanked.not && styles.unranked, should.disableTap && styles.disabled]}
+          >
+            {isRanked.not
+              ? !contractIsMet ? currentRank + 1 : '—'
+              : candidate.rank + 1}
           </Animated.Text>
         </Animated.View>
 
         <View style={styles.candidate}>
-          <Text style={styles.fieldValue}>{candidate.name}</Text>
-          {candidate.party && <Text style={styles.fieldLabel}>{candidate.party}</Text>}
+          <Text style={styles.fieldValue}>
+            {candidate.name}
+          </Text>
+          {candidate.party && (
+            <Text style={styles.fieldLabel}>
+              {candidate.party}
+            </Text>)
+          }
         </View>
       </Pressable>
 
       <View style={styles.controls}>
         <Pressable 
           style={upArrowStyles}
-          onPress={() => !should.hideArrowUp && actions[moveType === 'rank' ? 'raiseRank' : 'moveUp'](index, candidate.rank)}
+          onPress={() => handleArrowUp({ index, rank: candidate.rank })}
         >
           <Text style={styles.controlIcon}>⬆︎</Text>
         </Pressable>
 
         <Pressable 
           style={[downArrowStyles, styles.controlDown]}
-          onPress={() => !should.hideArrowDown && actions[moveType === 'rank' ? 'lowerRank' : 'moveDown'](index, candidate.rank)}
+          onPress={() => handleArrowDown({ index, rank: candidate.rank })}
         >
           <Text style={styles.controlIcon}>⬇︎</Text>
         </Pressable>
@@ -119,7 +128,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    // marginBottom: 10,
   },
   candidateAndRank: {
     flex: 1,
@@ -129,10 +137,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: CANDIDATE.HEIGHT,
     padding: 12,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#EEE',
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'black',
+    borderWidth: 2,
+    borderColor: '#111',
   },
   candidate: {
     flexBasis: 100,
@@ -142,6 +150,9 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     flexWrap: 'nowrap',
     marginLeft: 10,
+  },
+  selected: {
+    backgroundColor: '#FFF',
   },
   fieldValue: {
     fontSize: 19,
@@ -155,8 +166,8 @@ const styles = StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
     flexShrink: 0,
-    minWidth: 76,
-    padding: 24,
+    width: 60,
+    padding: 12,
     backgroundColor: '#111',
     borderRadius: 4,
     borderWidth: 1,
@@ -168,19 +179,22 @@ const styles = StyleSheet.create({
     color: '#111',
     borderStyle: 'dashed',
   },
+  unrankedAndDisabled: {
+    borderWidth: 0,
+  },
   rankLabel: {
     alignSelf: 'flex-start',
     width: '100%',
     fontSize: 12,
     fontWeight: 700,
-    color: 'white',
+    color: '#EEE',
     textAlign: 'center',
   },
   rankText: {
     width: '100%',
     fontSize: 24,
     fontWeight: 600,
-    color: 'white',
+    color: '#EEE',
     textAlign: 'center',
   },
   controls: {
@@ -196,7 +210,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     backgroundColor: '#FFF',
-    borderColor: 'black',
+    borderColor: '#111',
     borderWidth: 2,
     borderRadius: 4,
     padding: 12,
@@ -211,7 +225,7 @@ const styles = StyleSheet.create({
   disabled: {
     color: '#333',
     backgroundColor: '#CCC',
-    cursor: 'not-allowed',
+    borderColor: '#333',
     pointerEvents: 'none',
     userSelect: 'none',
   }

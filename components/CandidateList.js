@@ -1,55 +1,62 @@
-import { useMemo, useState, } from 'react';
-import { Button, Pressable, StyleSheet, Text, View, } from "react-native";
-import Animated, { CurvedTransition } from 'react-native-reanimated';
+import { useEffect, useMemo, useState, } from 'react';
+import { Pressable, StyleSheet, Text, View, } from "react-native";
+import Animated, { CurvedTransition, Keyframe, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, Easing } from 'react-native-reanimated';
 
 import RankCandidate from "./RankCandidate";
 import { LIST_ITEM_ANIMATION } from '../utils/animation'
 
 export default function CandidateList({ candidates, controlType = 'adjudicated', maxCandidates, }) {
   const [listItems, setListItems] = useState(candidates)
-  // const _rankedValues = useMemo(() =>
-  //   listItems
-  //     .filter(i => i.rank !== null)
-  //     .map(i => i.rank),
-  //   [listItems])
-  // const _unrankedValues = useMemo(() =>
-  //   Array(maxCandidates)
-  //     .fill()
-  //     .map((_, i) => i)
-  //     .filter(r => !_rankedValues.includes(r)),
-  //   [_rankedValues, maxCandidates])
-  // const memoizedCurrentRank = useMemo(() =>
-  //   _unrankedValues.length === 0
-  //     ? maxCandidates
-  //     : Math.min(..._unrankedValues),
-  //   [_unrankedValues, maxCandidates])
+
+  const rankedValues = useMemo(() =>
+    listItems
+      .filter(i => i.rank !== null)
+      .map(i => i.rank)
+      .sort(),
+    [listItems])
+
+  const unsetRankValues = useMemo(() =>
+    Array(maxCandidates)
+      .fill()
+      .map((_, i) => i)
+      .filter(r => !rankedValues.includes(r))
+      .sort(),
+    [rankedValues, maxCandidates])
+
+  const currentRank = useMemo(() =>
+    unsetRankValues.length === 0
+      ? maxCandidates
+      : Math.min(...unsetRankValues),
+    [unsetRankValues, maxCandidates])
   
-  // console.log(_rankedValues, _unrankedValues, memoizedCurrentRank)
+  const contractIsMet = useMemo(() =>
+    currentRank === maxCandidates,
+    [currentRank, maxCandidates])
+  
+  const lowestRank = useMemo(() =>
+    Math.max(...rankedValues),
+    [listItems, rankedValues])
 
-  const [currentRank, setCurrentRank] = useState(0)
-  // moveType: ['index', 'rank', 'none]
-  // Describes the type of candidate sorting mechanism in use
-  //    'index': use actions.moveUp/moveDown; arrows disabled on first and last listItems, and on unranked candidates
-  //    'rank': use actions.raiseRank/lowerRank; arrows disabled on highest- and lowest-ranked listItems, and on unranked candidates
-  //    'none': don't change candidate positions in list; otherwise the same as 'rank'
-  const [moveType, setMoveType] = useState('rank')
+  const highestRank = useMemo(() =>
+    Math.min(...rankedValues),
+    [listItems, rankedValues])
 
-  const contractIsMet = useMemo(() => currentRank === maxCandidates, [currentRank, maxCandidates])
-  const lowestRank = useMemo(() => Math.max(...listItems.map(item => item.rank)), [listItems])
-  const highestRank = useMemo(() => Math.min(...listItems.map(item => item.rank)), [listItems])
   const rankedItemIndices = useMemo(() => ({
     list: listItems.map((item, index) => item.rank !== null ? index : -1),
     lowestRank: listItems.findIndex(item => item.rank === lowestRank),
     highestRank: listItems.findIndex(item => item.rank === highestRank),
     first: listItems.findIndex(item => item.rank !== null),
     last: listItems.findLastIndex(item => item.rank !== null),
-  }), [listItems])
-  const isSorted = useMemo(() =>
-    // returns true when all contiguous items' ranks match their index
-    listItems.filter(i => i.rank !== null).every((item, index) => item.rank === index),
-    [listItems, rankedItemIndices]
-  )
+  }), [highestRank, listItems, lowestRank])
 
+  const animated = useSharedValue(0)
+
+  const isSorted = useMemo(() => 
+    listItems
+      .filter(i => i.rank !== null)
+      .every((item, index) => item.rank === index),
+    [listItems]
+  )
 
   const actions = {
     moveUp(index, rank) {
@@ -74,33 +81,31 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
           ? hasRankedItemAfterIndex + index + 1
           : -1
         if (nextClosestRankedItemIndex > -1) {
-          const currentItem = listItems[index]
           const rankedItemAfterIndex = listItems[nextClosestRankedItemIndex]
           let newListItems = [...listItems]
           newListItems[index] = { ...rankedItemAfterIndex, rank, }
-          newListItems[nextClosestRankedItemIndex] = { ...currentItem, rank: rankedItemAfterIndex.rank, }
+          newListItems[nextClosestRankedItemIndex] = { ...listItems[index], rank: rankedItemAfterIndex.rank, }
           setListItems(newListItems)
         }
       }
     },
     raiseRank(index, rank) {
       if (rank > 0) {
-        const currentItem = listItems[index]
-        // This breaks if there's a gap in ranked values, e.g. `[0, 2, 3, 4]` and `item.rank` === 2
-        const nextHighestRankedItemIndex = listItems.findIndex(item => item.rank === rank - 1)
+        const nextHighestRankedItemRank = rankedValues[rankedValues.indexOf(rank) - 1]
+        const nextHighestRankedItemIndex = listItems.findIndex(item => item.rank === nextHighestRankedItemRank)
         let newListItems = [...listItems]
         newListItems[index] = { ...listItems[nextHighestRankedItemIndex], rank, }
-        newListItems[nextHighestRankedItemIndex] = { ...currentItem, rank: rank - 1, }
+        newListItems[nextHighestRankedItemIndex] = { ...listItems[index], rank: nextHighestRankedItemRank, }
         setListItems(newListItems)
       }
     },
     lowerRank(index, rank) {
       if (rank < lowestRank) {
-        const currentItem = listItems[index]
-        const nextLowestRankedItemIndex = listItems.findIndex(item => item.rank === rank + 1)
+        const nextLowestRankedItemRank = rankedValues[rankedValues.indexOf(rank) + 1]
+        const nextLowestRankedItemIndex = listItems.findIndex(item => item.rank === nextLowestRankedItemRank)
         let newListItems = [...listItems]
         newListItems[index] = { ...listItems[nextLowestRankedItemIndex], rank, }
-        newListItems[nextLowestRankedItemIndex] = { ...currentItem, rank: rank + 1, }
+        newListItems[nextLowestRankedItemIndex] = { ...listItems[index], rank: nextLowestRankedItemRank, }
         setListItems(newListItems)
       }
     },
@@ -125,19 +130,6 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
         })
         newListItems[index] = { ...newListItems[index], rank: null, }
       }
-      const rankedValues = newListItems
-        .filter(i => i.rank !== null)
-        .map(i => i.rank)
-      const unsetRankValues =
-        Array(maxCandidates)
-          .fill()
-          .map((_, i) => i)
-          .filter(r => !rankedValues.includes(r))
-      setCurrentRank(
-        unsetRankValues.length === 0
-          ? maxCandidates
-          : Math.min(...unsetRankValues)
-      )
       setListItems(newListItems)
     },
     sort() {
@@ -155,31 +147,79 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
     }
   }
 
+  const menuRowEnteringAnimation = new Keyframe({
+    0: {
+      transform: [{ translateY: -20 }],
+      opacity: 0,
+      easing: Easing.inOut,
+    },
+    100: {
+      transform: [{ translateY: 0 }],
+      opacity: 1,
+    },
+  }).duration(300)
+
+  const menuRowExitingAnimation = new Keyframe({
+    0: {
+      transform: [{ translateY: 0 }],
+      opacity: 1,
+      easing: Easing.inOut,
+    },
+    100: {
+      transform: [{ translateY: -20 }],
+      opacity: 0,
+    },
+  }).duration(300)
+
+  // moveType: ['index', 'rank', 'none]
+  // Describes the type of candidate sorting mechanism in use
+  //    'index': use actions.moveUp/moveDown; arrows disabled on first and last listItems, and on unranked candidates
+  //    'rank': use actions.raiseRank/lowerRank; arrows disabled on highest- and lowest-ranked listItems, and on unranked candidates
+  //    'none': don't change candidate positions in list; otherwise the same as 'rank'
+  const [moveType, setMoveType] = useState('rank')
+
   return (
-    <View
+    <Animated.View
       style={styles.wrapper}
+      layout={CurvedTransition}
+      itemLayoutAnimation={LIST_ITEM_ANIMATION}
       contentContainerStyle={ styles.candidateList}
     >
-      <View style={styles.menu}>
-        <View style={[styles.menuRow, isSorted && styles.menuHidden]}>
-          <Text style={[styles.buttonText]}>Update rank by</Text>
-          <Pressable
-            style={[styles.button, styles.outline, moveType === 'rank' && styles.active]}
-            onPress={() => setMoveType('rank')}>
-            <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'rank' && styles.active]}>
-              Ranking
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.button, styles.outline, moveType === 'index' && styles.active]}
-            onPress={() => setMoveType('index')}>
-            <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'index' && styles.active]}>
-              Position
-            </Text>
-          </Pressable>
-        </View>
+      <View 
+        style={styles.menu}
+        layout={CurvedTransition}
+        itemLayoutAnimation={LIST_ITEM_ANIMATION}
+      >
+        {!isSorted && (
+          <Animated.View
+            style={[styles.menuRow]}
+            itemLayoutAnimation={LIST_ITEM_ANIMATION}
+            entering={menuRowEnteringAnimation}
+            exiting={menuRowExitingAnimation}
+          >
+            <Text style={[styles.buttonText]}>Update rank by</Text>
+            <Pressable
+              style={[styles.button, styles.outline, moveType === 'rank' && styles.active]}
+              onPress={() => setMoveType('rank')}>
+              <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'rank' && styles.active]}>
+                Ranking
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.button, styles.outline, moveType === 'index' && styles.active]}
+              onPress={() => setMoveType('index')}>
+              <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'index' && styles.active]}>
+                Position
+              </Text>
+            </Pressable>
+          </Animated.View>
+        )}
 
-        <View style={styles.menuRow}>
+        <Animated.View
+          style={styles.menuRow}
+          layout={CurvedTransition}
+          itemLayoutAnimation={LIST_ITEM_ANIMATION}
+        >
           <Pressable
             style={styles.button}
             onPress={() => actions.sort()}
@@ -188,7 +228,7 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
               Put in rank order
             </Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
 
       <Animated.FlatList
@@ -211,7 +251,7 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
           />
         )}
       />
-    </View>
+    </Animated.View>
   )
 }
 
@@ -231,9 +271,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: 10,
-  },
-  menuHidden: {
-    display: 'none',
   },
   button: {
     flex: 1,
@@ -255,17 +292,17 @@ const styles = StyleSheet.create({
   },
   active: {
     backgroundColor: '#111',
-    color: 'white',
+    color: '#EEE',
   },
   buttonText: {
     textAlign: 'center',
     fontWeight: '600',
   },
   buttonDefaultText: {
-    color: 'white',
+    color: '#EEE',
   },
   buttonOutlineText: {
-    color: 'black',
+    color: '#111',
   },
   candidateList: {
     alignSelf: 'stretch',
@@ -274,7 +311,7 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    backgroundColor: 'white',
+    backgroundColor: '#EEE',
     padding: 32,
   },
 })
