@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import CandidateList from './components/CandidateList';
 import Header from './components/Header';
+import Footer from './components/Footer';
 
 const candidates = [
   {
@@ -74,6 +75,7 @@ export default function App() {
         controlType={controlType}
       />
       <StatusBar style="auto" />
+      <Footer />
     </View>
   );
 }

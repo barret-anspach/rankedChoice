@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, } from 'react';
-import { Pressable, StyleSheet, Text, View, } from "react-native";
-import Animated, { CurvedTransition, Keyframe, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, Easing } from 'react-native-reanimated';
+import { useMemo, useState, } from 'react';
+import { StyleSheet, Text, View, } from "react-native";
+import Animated, { CurvedTransition, Easing, Keyframe, useSharedValue, } from 'react-native-reanimated';
 
-import RankCandidate from "./RankCandidate";
+import Button from "./Button";
+import RankCandidate from './RankCandidate'
 import { LIST_ITEM_ANIMATION } from '../utils/animation'
 
 export default function CandidateList({ candidates, controlType = 'adjudicated', maxCandidates, }) {
@@ -198,20 +199,32 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
             exiting={menuRowExitingAnimation}
           >
             <Text style={[styles.buttonText]}>Update rank by</Text>
-            <Pressable
-              style={[styles.button, styles.outline, moveType === 'rank' && styles.active]}
-              onPress={() => setMoveType('rank')}>
-              <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'rank' && styles.active]}>
-                Ranking
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.outline, moveType === 'index' && styles.active]}
-              onPress={() => setMoveType('index')}>
-              <Text style={[styles.buttonText, styles.buttonOutlineText, moveType === 'index' && styles.active]}>
-                Position
-              </Text>
-            </Pressable>
+            <Button
+              label="Ranking"
+              action={() => setMoveType('rank')}
+              containerStyles={[
+                styles.outline,
+                moveType === 'rank' && styles.active,
+              ]}
+              textStyles={[
+                styles.buttonText,
+                styles.buttonOutlineText,
+                moveType === 'rank' && styles.active,
+              ]}
+            />
+            <Button
+              label="Position"
+              action={() => setMoveType('index')}
+              containerStyles={[
+                styles.outline,
+                moveType === 'index' && styles.active,
+              ]}
+              textStyles={[
+                styles.buttonText,
+                styles.buttonOutlineText,
+                moveType === 'index' && styles.active,
+              ]}
+            />
           </Animated.View>
         )}
 
@@ -220,14 +233,10 @@ export default function CandidateList({ candidates, controlType = 'adjudicated',
           layout={CurvedTransition}
           itemLayoutAnimation={LIST_ITEM_ANIMATION}
         >
-          <Pressable
-            style={styles.button}
-            onPress={() => actions.sort()}
-          >
-            <Text style={[styles.buttonText, styles.buttonDefaultText]}>
-              Put in rank order
-            </Text>
-          </Pressable>
+          <Button
+            label="Put in rank order"
+            action={actions.sort}
+          />
         </Animated.View>
       </View>
 
@@ -308,9 +317,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
+    gap: 10,
     backgroundColor: '#EEE',
     padding: 32,
   },
