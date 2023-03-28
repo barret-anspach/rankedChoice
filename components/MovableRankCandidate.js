@@ -22,6 +22,8 @@ export default function MovableRankCandidate({
   rankedItemIndices,
   scrollY,
 }) {
+  // Adapted from Evening Kid's "React Native Reanimated 2 Multiple Drag and Sort" gist
+  // https://gist.github.com/eveningkid/00dc171095eb6d64f45afdbaa50a76c3
   const dimensions = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const [moving, setMoving] = useState(false)

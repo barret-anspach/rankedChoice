@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import CandidateList from './components/CandidateList';
 import Header from './components/Header';
@@ -66,21 +68,29 @@ Examples:
 const controlType = 'adjudicated'
 
 export default function App() {
+  // Per https://github.com/software-mansion/react-native-reanimated/issues/1423
+  global.__reanimatedWorkletInit = () => {};
+
   return (
-    <View style={styles.container}>
-      <Header />
-      <CandidateList
-        candidates={candidates}
-        maxCandidates={3}
-        controlType={controlType}
-      />
-      <StatusBar style="auto" />
-      <Footer />
-    </View>
+    <GestureHandlerRootView style={styles.gestureHandlerRootView}>
+      <View style={styles.container}>
+        <Header maxCandidates={candidates.length} />
+        <CandidateList
+          candidates={candidates}
+          maxCandidates={candidates.length}
+          controlType={controlType}
+        />
+        <StatusBar style="auto" />
+        <Footer />
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureHandlerRootView: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#EEE',

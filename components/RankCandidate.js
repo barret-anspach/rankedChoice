@@ -2,12 +2,10 @@ import { useEffect, useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View, } from 'react-native'
 import Animated, {
   CurvedTransition,
-  FadeIn, 
-  FadeOut, 
+  interpolateColor,
   useSharedValue, 
   useAnimatedStyle, 
-  withSpring, 
-  interpolateColor,
+  withSpring,
 } from 'react-native-reanimated'
 
 import { CANDIDATE } from './../utils/dimensions'
@@ -18,6 +16,8 @@ export default function RankCandidate({
   candidate,
   contractIsMet,
   currentRank,
+  disabled,
+  handleLongPress,
   index,
   moveType,
   rankedItemIndices,
@@ -69,7 +69,7 @@ export default function RankCandidate({
       isRanked.not,
       SPRING_CONFIG.MEDIUM[isRanked.not ? 'OUT' : 'IN']
     )
-  }, [animatedRank, candidate.rank])
+  }, [animatedRank, candidate.rank, isRanked.not])
 
   // Rank Text
 
@@ -81,7 +81,7 @@ export default function RankCandidate({
         { styleProp: 'color', inputRange: [1, 0], outputRange: ['rgb(17, 17, 17)', 'rgb(238, 238, 238)'], }
       ],
       speed: 'FAST',
-    })
+    }),
   ]
 
   // Arrow Up
@@ -132,24 +132,21 @@ export default function RankCandidate({
   ]
 
   return (
-    <View
-      style={styles.wrapper}
-    >
+    <View style={styles.wrapper}>
       <Animated.View
         style={candidateAndRankStyles}
       >
         <Pressable
           style={styles.candidateAndRankPressable}
           onPress={() => actions.select(index)}
+          onLongPress={handleLongPress}
+          disabled={disabled}
         >
           <Animated.View
             layout={CurvedTransition}
             style={rankStyles}
           >
             <Animated.Text
-              layout={CurvedTransition}
-              entering={FadeIn}
-              exiting={FadeOut}
               style={rankTextStyles}
             >
               {isRanked.not
@@ -206,6 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
+    marginBottom: 10,
   },
   candidateAndRank: {
     flex: 1,
@@ -233,9 +231,6 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
     marginLeft: 10,
   },
-  selected: {
-    backgroundColor: '#FFF',
-  },
   fieldValue: {
     fontSize: 19,
     fontWeight: 500,
@@ -255,22 +250,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#111',
     borderStyle: 'solid',
-  },
-  unranked: {
-    backgroundColor: '#EEE',
-    color: '#111',
-    borderStyle: 'dashed',
-  },
-  unrankedAndDisabled: {
-    borderWidth: 0,
-  },
-  rankLabel: {
-    alignSelf: 'flex-start',
-    width: '100%',
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#EEE',
-    textAlign: 'center',
   },
   rankText: {
     width: '100%',
@@ -305,11 +284,4 @@ const styles = StyleSheet.create({
     fontSize: 24,
     textAlign: 'center',
   },
-  disabled: {
-    color: '#333',
-    backgroundColor: '#CCC',
-    borderColor: '#333',
-    pointerEvents: 'none',
-    userSelect: 'none',
-  }
 })

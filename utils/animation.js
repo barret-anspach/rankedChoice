@@ -75,7 +75,7 @@ export function useColorAnimation({
       value,
       SPRING_CONFIG[speed][value ? 'OUT' : 'IN']
     )
-  }, [animated, value])
+  }, [animated, speed, value])
 
   return animatedStyle
 }

@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View, } from 'react-native'
 
-export default function Header() {
+export default function Header({ maxCandidates }) {
   return (
     <View style={styles.contestHeader}>
       <Text style={styles.contestNumber}>Contest 1 of 3</Text>
       <Text style={styles.contestHeading}>President of the United States</Text>
-      <Text style={styles.contestInstructions}>Rank your top 3 candidates. Tap in order of preference. Tap again to deselect. Use arrows to raise or lower a candidate's rank.</Text>
+      <Text style={styles.contestInstructions}>Tap your top {maxCandidates} candidates in order of preference. Tap again to deselect. Use arrows to raise or lower a candidate's rank. Long tap to adjust candidate ranks.</Text>
     </View>
   )
 }
@@ -13,7 +13,7 @@ export default function Header() {
 const styles = StyleSheet.create({
   contestHeader: {
     padding: 12,
-    paddingTop: 60,
+    paddingTop: 24,
     backgroundColor: '#BBB',
     borderBottomColor: '#111',
     borderBottomWidth: 1,
