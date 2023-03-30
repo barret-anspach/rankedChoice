@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, } from 'react-native'
+import Constants from 'expo-constants'
 
 export default function Header({ maxCandidates }) {
   return (
@@ -13,7 +14,7 @@ export default function Header({ maxCandidates }) {
 const styles = StyleSheet.create({
   contestHeader: {
     padding: 12,
-    paddingTop: 24,
+    paddingTop: Constants.statusBarHeight,
     backgroundColor: '#BBB',
     borderBottomColor: '#111',
     borderBottomWidth: 1,
